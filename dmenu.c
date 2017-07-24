@@ -647,6 +647,7 @@ main(int argc, char *argv[])
 {
 	XWindowAttributes wa;
 	int i, fast = 0;
+	char* initial_text = NULL;
 
 	for (i = 1; i < argc; i++)
 		/* these options take no arguments */
@@ -681,10 +682,9 @@ main(int argc, char *argv[])
 			colors[SchemeSel][ColFg] = argv[++i];
 		else if (!strcmp(argv[i], "-w"))   /* embedding window id */
 			embed = argv[++i];
-		else if (!strcmp(argv[i], "-it")) {   /* embedding window id */
-			const char * text = argv[++i];
-			insert(text, strlen(text));
-		} else
+		else if (!strcmp(argv[i], "-it"))  /* initial text */
+			initial_text = argv[++i];
+		else
 			usage();
 
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
@@ -711,6 +711,10 @@ main(int argc, char *argv[])
 		grabkeyboard();
 	}
 	setup();
+	if(initial_text) {
+		insert(initial_text, strlen(initial_text));
+        drawmenu();
+    }
 	run();
 
 	return 1; /* unreachable */
