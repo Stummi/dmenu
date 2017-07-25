@@ -1,0 +1,80 @@
+#!/bin/bash
+
+####
+# dmenu_cmd
+###
+# dmenu_cmd is a simple tool to invoke any configured command
+# using shortcuts.
+###
+# Requirements
+# You need dmenu, built with some patches. A ready to use version
+# is available at https://github.com/stummi/dmenu/tree/config/stummi
+###
+# Configuration:
+#
+# Place a ~/cmdlist file with the following structure, one line per entry:
+#
+# <shortcut> <name> [<command> [<args>...]]
+# 
+# if you don't specify a command, the entry denotes a submenu
+#
+# Example config file:
+####
+# c Console
+# ch Home urxvt
+# cd Downloads urxvt -cd ~/Downloads
+#
+# b Browser
+# bw Wikipedia x-www-browser https://en.wikipedia.org/wiki/
+# bd Dict x-www-browser http://dict.leo.org/
+# bs Suckless x-www-browser http://suckless.org/
+####
+# Usage:
+# 
+# dmenu_cmd
+#     starts the dmenu_cmd instance at your root, in the example above,
+#     typing "ch" now will invoke the "ch" entry in cmdlist, as in opening 
+#     a console in your home directory
+# dmenu_cmd <cmd>
+#     invokes dmenu_cmd for a given command. If <cmd> specifies a submenu
+#     the instance starts at this submenu. For example, "dmenu_cmd c" will
+#     start in the "Console" submenu, and typing h now will invoke the "ch"
+#     command. If <cmd> specifies an entry with a defined command, the command
+#     will be invoked ("dmenu_cmd ch" will invoke the ch entry)
+####
+# Setup:
+# 
+# It's advised to configure dmenu_cmd on a global shortcut within your WM or DM,
+# either one binding for the root menu, or one binding per first level submenu.
+####
+arg=$1
+
+read_cmd_list() {
+    egrep -v "^#|^( \t)*$" ~/cmdlist 
+}
+
+echo "cmd: ${arg:-<empty>}"
+if [[ $arg ]]; then
+    read key name cmd < <(read_cmd_list | egrep "^$1 ")
+
+    if ! [[ $key ]]; then
+        echo "$arg: key not found!" >&2
+        exit 1
+    fi
+fi
+
+if [[ $cmd ]]; then
+   echo $cmd
+   eval exec $cmd
+fi
+
+reply=$(
+    while read key name cmd; do
+        [[ ${key#$arg} == ? ]] || continue
+        echo "$key: $name"
+    done < <(read_cmd_list) | ~/bin/dmenu -l 10 -n -r -it "$arg"
+)
+
+[[ $reply ]] || exit 1
+
+exec dmenu_cmd ${reply%%:*}
